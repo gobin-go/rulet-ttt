@@ -1,272 +1,150 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>조작 가능한 돌림판</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 10px;
-            background: #f0f0f0;
-        }
-
-        canvas {
-            border: 2px solid #333;
-            margin-top: 20px;
-            max-width: 100%;
-            height: auto;
-        }
-
-        input {
-            margin: 5px;
-            width: 80px;
-        }
-
-        #nameInputs {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        #winners {
-            margin-top: 20px;
-            word-break: break-word;
-        }
-
-        button {
-            margin-top: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
-        }
-
-        h2 {
-            font-size: 1.5rem;
-            text-align: center;
-        }
-
-        /* ----- 팝업 스타일 ----- */
-        .popup-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            visibility: hidden;
-            opacity: 0;
-            transition: visibility 0s, opacity 0.3s;
-        }
-
-        .popup-container.show {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        .popup-content {
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            transform: scale(0.9);
-            transition: transform 0.3s;
-        }
-
-        .popup-container.show .popup-content {
-            transform: scale(1);
-        }
-
-        .popup-content h3 {
-            color: #e74c3c;
-            font-size: 2em;
-            margin-bottom: 10px;
-        }
-
-        .popup-content p {
-            font-size: 1.2em;
-        }
-
-        .popup-content button {
-            background-color: #3498db;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            margin-top: 20px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>조작 가능한 돌림판</title>
+<style>
+  body { font-family: Arial, sans-serif; display:flex; flex-direction:column; align-items:center; padding:20px; background:#f0f0f0; }
+  canvas { border:2px solid #333; margin-top:20px; }
+  input { margin:5px; width:100px; }
+  #winners { margin-top:20px; }
+  button { margin-top:10px; padding:10px 20px; font-size:16px; }
+</style>
 </head>
 <body>
 
-    <h2>돌림판</h2>
-    <div id="nameInputs"></div>
+<h2>돌림판</h2>
 
-    <button id="spinBtn">룰렛 돌리기</button>
-    <button id="resetBtn">초기화</button>
+<div>
+  <p>12명 이름 입력:</p>
+  <div id="nameInputs"></div>
+</div>
 
-    <canvas id="wheel"></canvas>
+<button id="spinBtn">룰렛 돌리기</button>
+<button id="resetBtn">초기화</button>
 
-    <div id="winners">
-        <h3>당첨자 명단</h3>
-        <ul id="winnerList"></ul>
-    </div>
+<canvas id="wheel" width="400" height="400"></canvas>
 
-    <div id="winnerPopup" class="popup-container">
-        <div class="popup-content">
-            <h3>🎉 당첨자 🎉</h3>
-            <p id="winnerNameDisplay"></p>
-            <button id="closePopupBtn">닫기</button>
-        </div>
-    </div>
+<div id="winners">
+  <h3>당첨자 명단</h3>
+  <ul id="winnerList"></ul>
+</div>
 
-    <script>
-        const canvas = document.getElementById('wheel');
-        const ctx = canvas.getContext('2d');
-        const spinBtn = document.getElementById('spinBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const winnerList = document.getElementById('winnerList');
-        const winnerPopup = document.getElementById('winnerPopup');
-        const winnerNameDisplay = document.getElementById('winnerNameDisplay');
-        const closePopupBtn = document.getElementById('closePopupBtn');
+<script>
+const canvas = document.getElementById('wheel');
+const ctx = canvas.getContext('2d');
+const spinBtn = document.getElementById('spinBtn');
+const resetBtn = document.getElementById('resetBtn');
+const winnerList = document.getElementById('winnerList');
 
-        const N = 12;
-        const sliceDeg = 360 / N;
-        let names = Array(N).fill('');
+const N = 12;
+const sliceDeg = 360 / N;
+let names = Array(N).fill('');
 
-        // 화면 크기에 맞게 캔버스 크기 조정
-        function resizeCanvas() {
-            const size = Math.min(window.innerWidth * 0.9, 400);
-            canvas.width = size;
-            canvas.height = size;
-        }
-        resizeCanvas();
-        window.addEventListener('resize', () => {
-            resizeCanvas();
-            drawWheel(rotation);
-        });
+// 입력칸 생성
+const nameInputsDiv = document.getElementById('nameInputs');
+for(let i=0;i<N;i++){
+  const inp = document.createElement('input');
+  inp.placeholder = `이름 ${i+1}`;
+  inp.addEventListener('input', e => names[i] = e.target.value);
+  nameInputsDiv.appendChild(inp);
+}
 
-        // 입력칸 생성
-        const nameInputsDiv = document.getElementById('nameInputs');
-        for (let i = 0; i < N; i++) {
-            const inp = document.createElement('input');
-            inp.placeholder = `이름 ${i + 1}`;
-            inp.addEventListener('input', e => names[i] = e.target.value);
-            nameInputsDiv.appendChild(inp);
-        }
+// 조작 가능한 인덱스 (0 기반)
+const forcedIndices = [0,2,3,4,7,10];
 
-        // 조작 가능한 인덱스 (0 기반)
-        const forcedIndices = [0, 2, 3, 4, 7, 10];
-        let appearedIndices = []; // 이미 나온 forcedIndices 기록
+let rotation = 0;
 
-        let rotation = 0;
+// 돌림판 그리기
+function drawWheel(rotationAngle){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const cx = canvas.width/2;
+  const cy = canvas.height/2;
+  const r = 180;
 
-        // 돌림판 그리기
-        function drawWheel(rotationAngle) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const cx = canvas.width / 2;
-            const cy = canvas.height / 2;
-            const r = canvas.width / 2 - 10;
+  for(let i=0;i<N;i++){
+    const start = ((i*sliceDeg) - 90 + rotationAngle) * Math.PI/180;
+    const end = (((i+1)*sliceDeg) - 90 + rotationAngle) * Math.PI/180;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, start, end);
+    ctx.closePath();
+    ctx.fillStyle = i%2===0?'#ff9999':'#99ccff';
+    ctx.fill();
 
-            for (let i = 0; i < N; i++) {
-                const start = ((i * sliceDeg) - 90 + rotationAngle) * Math.PI / 180;
-                const end = (((i + 1) * sliceDeg) - 90 + rotationAngle) * Math.PI / 180;
-                ctx.beginPath();
-                ctx.moveTo(cx, cy);
-                ctx.arc(cx, cy, r, start, end);
-                ctx.closePath();
-                ctx.fillStyle = i % 2 === 0 ? '#ff9999' : '#99ccff';
-                ctx.fill();
+    // 이름 쓰기
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate((start+end)/2);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#000';
+    ctx.font = '14px Arial';
+    ctx.fillText(names[i] || `칸 ${i+1}`, r-10, 5);
+    ctx.restore();
+  }
 
-                // 이름 쓰기
-                ctx.save();
-                ctx.translate(cx, cy);
-                ctx.rotate((start + end) / 2);
-                ctx.textAlign = 'right';
-                ctx.fillStyle = '#000';
-                ctx.font = `${Math.floor(r / 12)}px Arial`;
-                ctx.fillText(names[i] || `칸 ${i + 1}`, r - 10, 5);
-                ctx.restore();
-            }
+  // 중앙 표시 (화살표: 칸1과 칸2 사이, 아래를 보는 방향)
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.beginPath();
+  ctx.moveTo(0, -180);    // 위쪽 끝
+  ctx.lineTo(-15, -150);  // 좌측 아래
+  ctx.lineTo(15, -150);   // 우측 아래
+  ctx.closePath();
+  ctx.fillStyle = 'black';
+  ctx.fill();
+  ctx.restore();
+}
 
-            // 중앙 표시 (화살표)
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.beginPath();
-            ctx.moveTo(0, -r);
-            ctx.lineTo(-r * 0.08, -r * 0.83);
-            ctx.lineTo(r * 0.08, -r * 0.83);
-            ctx.closePath();
-            ctx.fillStyle = 'black';
-            ctx.fill();
-            ctx.restore();
-        }
+drawWheel(rotation);
 
-        drawWheel(rotation);
+// 룰렛 돌리기 애니메이션
+function spinWheel(){
+  spinBtn.disabled = true;
 
-        // 룰렛 돌리기 애니메이션
-        function spinWheel() {
-            spinBtn.disabled = true;
+  // 조작된 인덱스 선택
+  const idx = forcedIndices[Math.floor(Math.random()*forcedIndices.length)];
+  const targetAngle = (360 - (idx * sliceDeg + sliceDeg/2)) % 360;
 
-            // 아직 안 나온 forcedIndices 중에서 선택
-            const remaining = forcedIndices.filter(i => !appearedIndices.includes(i));
-            let idx;
-            if (remaining.length > 0) {
-                idx = remaining[Math.floor(Math.random() * remaining.length)];
-            } else {
-                idx = forcedIndices[Math.floor(Math.random() * forcedIndices.length)];
-            }
+  // 애니메이션 설정
+  let start = null;
+  const duration = 4000; // 4초
+  const spins = 5; // 전체 회전 횟수
 
-            // 이번에 나온 인덱스 기록
-            if (!appearedIndices.includes(idx)) appearedIndices.push(idx);
+  function animate(timestamp){
+    if(!start) start = timestamp;
+    const elapsed = timestamp - start;
+    const progress = Math.min(elapsed / duration, 1);
 
-            const targetAngle = (360 - (idx * sliceDeg + sliceDeg / 2)) % 360;
-            let start = null;
-            const duration = 4000;
-            const spins = 5;
+    // easing (부드럽게 감속)
+    const ease = 1 - Math.pow(1 - progress, 3);
 
-            function animate(timestamp) {
-                if (!start) start = timestamp;
-                const elapsed = timestamp - start;
-                const progress = Math.min(elapsed / duration, 1);
-                const ease = 1 - Math.pow(1 - progress, 3);
+    rotation = spins*360*ease + targetAngle*ease;
+    drawWheel(rotation);
 
-                rotation = spins * 360 * ease + targetAngle * ease;
-                drawWheel(rotation);
+    if(progress < 1){
+      requestAnimationFrame(animate);
+    } else {
+      // 당첨자 기록
+      const winner = names[idx] || `칸 ${idx+1}`;
+      const li = document.createElement('li');
+      li.textContent = winner;
+      winnerList.appendChild(li);
+      spinBtn.disabled = false;
+    }
+  }
 
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                } else {
-                    const winner = names[idx] || `칸 ${idx + 1}`;
-                    const li = document.createElement('li');
-                    li.textContent = winner;
-                    winnerList.appendChild(li);
+  requestAnimationFrame(animate);
+}
 
-                    // 팝업 표시
-                    winnerNameDisplay.textContent = winner;
-                    winnerPopup.classList.add('show');
+spinBtn.addEventListener('click', spinWheel);
 
-                    spinBtn.disabled = false;
-                }
-            }
+// 초기화 버튼
+resetBtn.addEventListener('click', () => {
+  winnerList.innerHTML = '';
+});
+</script>
 
-            requestAnimationFrame(animate);
-        }
-
-        spinBtn.addEventListener('click', spinWheel);
-        resetBtn.addEventListener('click', () => {
-            winnerList.innerHTML = '';
-            appearedIndices = []; // 기록 초기화
-        });
-
-        closePopupBtn.addEventListener('click', () => {
-            winnerPopup.classList.remove('show');
-        });
-    </script>
 </body>
 </html>
