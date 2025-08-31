@@ -105,8 +105,7 @@
 <body>
 
     <h2>돌림판</h2>
-
-   
+    <div id="nameInputs"></div>
 
     <button id="spinBtn">룰렛 돌리기</button>
     <button id="resetBtn">초기화</button>
@@ -161,9 +160,6 @@
             nameInputsDiv.appendChild(inp);
         }
 
-        // 조작 가능한 인덱스 (0 기반)
-        const forcedIndices = [0, 2, 3, 4, 7, 10];
-
         let rotation = 0;
 
         // 돌림판 그리기
@@ -209,10 +205,16 @@
 
         drawWheel(rotation);
 
+        // 순서 강제 배열 (0 기반)
+        const forcedOrder = [0,0,2,3,0,4,7,10]; // 1,3,4,1,5,8,11
+        let spinCount = 0;
+
         // 룰렛 돌리기 애니메이션
         function spinWheel() {
             spinBtn.disabled = true;
-            const idx = forcedIndices[Math.floor(Math.random() * forcedIndices.length)];
+            const idx = forcedOrder[spinCount % forcedOrder.length];
+            spinCount++;
+
             const targetAngle = (360 - (idx * sliceDeg + sliceDeg / 2)) % 360;
             let start = null;
             const duration = 4000;
@@ -247,7 +249,10 @@
         }
 
         spinBtn.addEventListener('click', spinWheel);
-        resetBtn.addEventListener('click', () => { winnerList.innerHTML = ''; });
+        resetBtn.addEventListener('click', () => {
+            winnerList.innerHTML = '';
+            spinCount = 0; // 초기화
+        });
 
         closePopupBtn.addEventListener('click', () => {
             winnerPopup.classList.remove('show');
