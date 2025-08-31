@@ -59,7 +59,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            visibility: hidden;
+            visibility: hidden; /* 초기에는 숨김 */
             opacity: 0;
             transition: visibility 0s, opacity 0.3s;
         }
@@ -105,7 +105,11 @@
 <body>
 
     <h2>돌림판</h2>
-    <div id="nameInputs"></div>
+
+    <div>
+        <p>12명 이름 입력:</p>
+        <div id="nameInputs"></div>
+    </div>
 
     <button id="spinBtn">룰렛 돌리기</button>
     <button id="resetBtn">초기화</button>
@@ -161,8 +165,7 @@
         }
 
         // 조작 가능한 인덱스 (0 기반)
-        const forcedIndices = [0, 2, 3, 0, 4, 7, 3, 10];
-        let appearedIndices = []; // 이미 나온 forcedIndices 기록
+        const forcedIndices = [0, 2, 3, 4, 7, 10];
 
         let rotation = 0;
 
@@ -212,19 +215,7 @@
         // 룰렛 돌리기 애니메이션
         function spinWheel() {
             spinBtn.disabled = true;
-
-            // 아직 안 나온 forcedIndices 중에서 선택
-            const remaining = forcedIndices.filter(i => !appearedIndices.includes(i));
-            let idx;
-            if (remaining.length > 0) {
-                idx = remaining[Math.floor(Math.random() * remaining.length)];
-            } else {
-                idx = forcedIndices[Math.floor(Math.random() * forcedIndices.length)];
-            }
-
-            // 이번에 나온 인덱스 기록
-            if (!appearedIndices.includes(idx)) appearedIndices.push(idx);
-
+            const idx = forcedIndices[Math.floor(Math.random() * forcedIndices.length)];
             const targetAngle = (360 - (idx * sliceDeg + sliceDeg / 2)) % 360;
             let start = null;
             const duration = 4000;
@@ -259,10 +250,7 @@
         }
 
         spinBtn.addEventListener('click', spinWheel);
-        resetBtn.addEventListener('click', () => {
-            winnerList.innerHTML = '';
-            appearedIndices = []; // 기록 초기화
-        });
+        resetBtn.addEventListener('click', () => { winnerList.innerHTML = ''; });
 
         closePopupBtn.addEventListener('click', () => {
             winnerPopup.classList.remove('show');
